@@ -37,6 +37,16 @@
         .game-link:hover {
             background-color: #0056b3;
         }
+        .app-area {
+    width: 80%; /* 區域隨螢幕寬度變化 */
+    margin: 0 auto;
+    }
+
+        .game-card {
+    /* 核心程式碼 */
+    max-width: 100%; /* 圖片寬度最大不超過父元素寬度 */
+    height: auto;    /* 高度根據寬度比例自動調整，防止變形 */
+    }
     </style>
 </head>
 <body>
@@ -45,7 +55,7 @@
         <!-- 瑞典語標題 -->
         <h1>🎮 Mitt Spelbibliotek</h1>
         
-        <div class="game-grid">
+        <div class="app-area">
             
             <!-- 遊戲卡片 1 -->
             <a href="https://wantingwants.github.io/poppa-ballonger/" class="game-card" target="_blank">
