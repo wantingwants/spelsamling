@@ -13,76 +13,105 @@
         }
         h1 {
             color: #333;
+            margin-bottom: 30px;
         }
+        
+        /* 稍微放寬 container，讓兩張卡片並排時有足夠空間 */
         .container {
-            max-width: 600px;
+            max-width: 800px; 
             margin: 0 auto;
             background: white;
             padding: 30px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
-        .game-link {
-            display: block;
-            margin: 15px 0;
-            padding: 15px;
-            background-color: #007bff;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-size: 18px;
-            font-weight: bold;
-            transition: background 0.3s;
-        }
-        .game-link:hover {
-            background-color: #0056b3;
-        }
+        
+        /* 🎮 核心：設定兩列網格 */
         .app-area {
-    width: 80%; /* 區域隨螢幕寬度變化 */
-    margin: 0 auto;
-    }
+            width: 100%; 
+            margin: 0 auto;
+            display: grid;
+            /* 預設在電腦版：一排兩個 (均分空間) */
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 20px; /* 卡片間距 */
+        }
 
+        /* 遊戲卡片外框 */
         .game-card {
-    /* 核心程式碼 */
-    max-width: 100%; /* 圖片寬度最大不超過父元素寬度 */
-    height: auto;    /* 高度根據寬度比例自動調整，防止變形 */
-    }
+            display: flex;
+            flex-direction: column;
+            background-color: #ffffff;
+            border: 1px solid #e1e4e8;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #333;
+            overflow: hidden;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            height: 100%;
+        }
+
+        /* 滑鼠懸停效果 */
+        .game-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        /* 遊戲圖片 */
+        .game-card img {
+            display: block;
+            width: 100%;
+            height: 200px;      /* 固定高度，讓卡片對齊 */
+            object-fit: cover;  /* 裁切防變形 */
+        }
+
+        /* 遊戲標題 */
+        .game-card h3 {
+            margin: 0;
+            padding: 15px;
+            font-size: 16px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #e1e4e8;
+            flex-grow: 1; /* 讓標題區塊自動撐滿剩餘高度 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 📱 響應式：當螢幕寬度小於 600px (如手機) 時，自動切換成一排一個 */
+        @media (max-width: 600px) {
+            .app-area {
+                grid-template-columns: 1fr; /* 切換為一列 */
+            }
+            .game-card img {
+                height: 160px; /* 手機上圖片稍微矮一點，比例比較好看 */
+            }
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <!-- 瑞典語標題 -->
         <h1>🎮 Mitt Spelbibliotek</h1>
         
         <div class="app-area">
             
-            <!-- 遊戲卡片 1 -->
-            <a href="https://wantingwants.github.io/poppa-ballonger/" class="" target="_blank">
-                <!-- 將這裡的圖片路徑換成你自己的圖片檔案名稱 -->
-                <img src="poppa-ballonger-image.png" alt="Poppa Ballonger Image" class="game-card">
+            <a href="https://wantingwants.github.io/poppa-ballonger/" class="game-card" target="_blank">
+                <img src="poppa-ballonger-image.png" alt="Poppa Ballonger Image">
                 <h3>Poppa Ballanger</h3>
             </a>
 
-            <!-- 遊戲卡片 2 -->
-            <a href="https://wantingwants.github.io/dragon-boat/" class="" target="_blank">
-                <img src="dragon-boat-image.png" alt="Dragon Boat Image" class="game-card">
+            <a href="https://wantingwants.github.io/dragon-boat/" class="game-card" target="_blank">
+                <img src="dragon-boat-image.png" alt="Dragon Boat Image">
                 <h3>Row Dragon Boat</h3>
             </a>
 
-            <!-- 遊戲卡片 3 -->
-            <a href="https://wantingwants.github.io/ear-training/" class="" target="_blank">
-                <img src="ear-training-image.png" alt="Ear Training Image" class="game-card">
-                <h3>Ear Traning</h3>
+            <a href="https://wantingwants.github.io/ear-training/" class="game-card" target="_blank">
+                <img src="ear-training-image.png" alt="Ear Training Image">
+                <h3>Ear Training</h3>
             </a>
-
-            <!-- 你可以輕鬆地複製上方的 <a> 區塊來增加更多遊戲 -->
 
         </div>
     </div>
-
-    <div class="container">
-
 
 </body>
 </html>
