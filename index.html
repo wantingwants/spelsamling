@@ -1,121 +1,967 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="sv">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Min Spelsamling</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f2f5;
-            text-align: center;
-            padding: 50px 20px;
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-        }
-        
-        /* 稍微放寬 container，讓兩張卡片並排時有足夠空間 */
-        .container {
-            max-width: 800px; 
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        
-        /* 🎮 核心：設定兩列網格 */
-        .app-area {
-            width: 100%; 
-            margin: 0 auto;
-            display: grid;
-            /* 預設在電腦版：一排兩個 (均分空間) */
-            grid-template-columns: repeat(2, 1fr); 
-            gap: 20px; /* 卡片間距 */
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Capybaras Brödhopp</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    overflow: hidden; background: #7ec8e3;
+    font-family: 'Segoe UI', Tahoma, Verdana, sans-serif;
+    -webkit-user-select: none; user-select: none;
+    touch-action: none;
+  }
+  #game { display: block; width: 100%; height: 100%; }
 
-        /* 遊戲卡片外框 */
-        .game-card {
-            display: flex;
-            flex-direction: column;
-            background-color: #ffffff;
-            border: 1px solid #e1e4e8;
-            border-radius: 8px;
-            text-decoration: none;
-            color: #333;
-            overflow: hidden;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            height: 100%;
-        }
+  #hud {
+    position: fixed; top: 0; left: 0; width: 100%;
+    padding: 14px 18px; box-sizing: border-box;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    pointer-events: none; color: #fff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.35);
+  }
+  #hud .score-box { font-size: 20px; font-weight: 700; line-height: 1.3; }
+  #hud .score-box small { display:block; font-size: 13px; font-weight: 500; opacity: 0.9; }
 
-        /* 滑鼠懸停效果 */
-        .game-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        }
+  .overlay {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(20, 30, 50, 0.45);
+    backdrop-filter: blur(2px);
+  }
+  .panel {
+    background: linear-gradient(180deg, #fffaf0, #fdf1d6);
+    border-radius: 22px;
+    padding: 28px 30px 26px;
+    max-width: 340px; width: 86%;
+    text-align: center;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+    border: 4px solid #f3c26b;
+  }
+  .panel h1 {
+    margin: 0 0 6px; font-size: 26px; color: #6b4423;
+  }
+  .panel p {
+    margin: 10px 0; color: #7a5636; font-size: 15px; line-height: 1.5;
+  }
+  .panel .big-score {
+    font-size: 40px; font-weight: 800; color: #d97b1f; margin: 6px 0 2px;
+  }
+  .panel .best {
+    font-size: 14px; color: #a97a45; margin-bottom: 14px;
+  }
+  button.play-btn {
+    margin-top: 10px;
+    background: linear-gradient(180deg, #ff9f43, #f3720c);
+    border: none; color: white; font-size: 18px; font-weight: 700;
+    padding: 13px 30px; border-radius: 40px; cursor: pointer;
+    box-shadow: 0 5px 0 #c25708, 0 8px 14px rgba(0,0,0,0.25);
+    transition: transform 0.08s;
+  }
+  button.play-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #c25708; }
 
-        /* 遊戲圖片 */
-        .game-card img {
-            display: block;
-            width: 100%;
-            height: 200px;      /* 固定高度，讓卡片對齊 */
-            object-fit: cover;  /* 裁切防變形 */
-        }
+  #holdBarWrap {
+    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+    width: 180px; height: 14px; border-radius: 10px;
+    background: rgba(255,255,255,0.35); border: 2px solid rgba(255,255,255,0.7);
+    overflow: hidden; opacity: 0; transition: opacity 0.15s; pointer-events: none;
+  }
+  #holdBarWrap.show { opacity: 1; }
+  #holdBar {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, #8be36b, #ffd23f, #ff5f5f);
+    border-radius: 10px 0 0 10px;
+  }
 
-        /* 遊戲標題 */
-        .game-card h3 {
-            margin: 0;
-            padding: 15px;
-            font-size: 16px;
-            background-color: #f8f9fa;
-            border-top: 1px solid #e1e4e8;
-            flex-grow: 1; /* 讓標題區塊自動撐滿剩餘高度 */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+  #hint {
+    position: fixed; left: 50%; bottom: 52px; transform: translateX(-50%);
+    color: #fff; font-size: 14px; font-weight: 600;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    opacity: 0.95; pointer-events: none;
+    transition: opacity 0.3s;
+  }
 
-        /* 📱 響應式：當螢幕寬度小於 600px (如手機) 時，自動切換成一排一個 */
-        @media (max-width: 600px) {
-            .app-area {
-                grid-template-columns: 1fr; /* 切換為一列 */
-            }
-            .game-card img {
-                height: 160px; /* 手機上圖片稍微矮一點，比例比較好看 */
-            }
-        }
-    </style>
+  #roundTimerWrap {
+    position: fixed; top: 62px; left: 50%; transform: translateX(-50%);
+    width: 140px; height: 9px; border-radius: 8px;
+    background: rgba(255,255,255,0.3); border: 2px solid rgba(255,255,255,0.6);
+    overflow: hidden; opacity: 0; transition: opacity 0.2s; pointer-events: none;
+  }
+  #roundTimerWrap.show { opacity: 1; }
+  #roundTimerBar {
+    height: 100%; width: 100%;
+    background: linear-gradient(90deg, #8be36b, #ffd23f);
+    transition: width 0.05s linear, background-color 0.2s;
+  }
+  #timeText {
+    position: fixed; top: 74px; left: 50%; transform: translateX(-50%);
+    color: #fff; font-size: 12px; font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    pointer-events: none; opacity: 0; transition: opacity 0.2s;
+  }
+  #timeText.show { opacity: 0.95; }
+</style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>🎮 Mitt Spelbibliotek</h1>
-        
-        <div class="app-area">
-            <a href="https://wantingwants.github.io/capybara-brodhopp/" class="game-card" target="_blank">
-                <img src="capybara-brodhopp.png" alt="Capybara Brödhopp Image">
-                <h3>Capybara Brödhopp</h3>
-            </a>
-            
-            <a href="https://wantingwants.github.io/poppa-ballonger/" class="game-card" target="_blank">
-                <img src="poppa-ballonger-image.png" alt="Poppa Ballonger Image">
-                <h3>Poppa Ballanger</h3>
-            </a>
+<canvas id="game"></canvas>
 
-            <a href="https://wantingwants.github.io/dragon-boat/" class="game-card" target="_blank">
-                <img src="dragon-boat-image.png" alt="Dragon Boat Image">
-                <h3>Row Dragon Boat</h3>
-            </a>
+<div id="hud">
+  <div class="score-box">
+    Nivå: <span id="levelVal">0</span>
+    <small>Höjd: <span id="heightVal">0.0</span> m</small>
+    <div id="livesRow" style="margin-top:4px; font-size:18px; letter-spacing:2px;">❤️❤️❤️</div>
+  </div>
+  <div class="score-box" style="text-align:right;">
+    Idag: <span id="dailyBestVal">0</span>
+    <small>Vecka: <span id="weeklyBestVal">0</span></small>
+  </div>
+</div>
 
-            <a href="https://wantingwants.github.io/ear-training/" class="game-card" target="_blank">
-                <img src="ear-training-image.png" alt="Ear Training Image">
-                <h3>Ear Training</h3>
-            </a>
+<div id="hint">Håll nere (eller mellanslag) för att hoppa &middot; släpp för att falla</div>
+<div id="holdBarWrap"><div id="holdBar"></div></div>
+<div id="roundTimerWrap"><div id="roundTimerBar"></div></div>
+<div id="timeText">60 s kvar</div>
 
-        </div>
+<button id="charBtn" title="Byt figur (SVG eller PNG)" style="position:fixed; bottom:16px; right:16px; width:44px; height:44px; border-radius:50%; border:none; background:rgba(255,255,255,0.85); font-size:20px; cursor:pointer; box-shadow:0 3px 10px rgba(0,0,0,0.25); z-index:5;">🎨</button>
+<input type="file" id="capyFileInput" accept="image/svg+xml,image/png,image/jpeg" style="display:none;">
+
+<div id="startOverlay" class="overlay">
+  <div class="panel">
+    <h1>🦫 Capybaras Brödhopp</h1>
+    <p>Capybaran står på en tallrik. Flera bröd flyger in från båda sidor på olika höjder. Se upp för mögliga bröd — de rasar ihop om du landar på dem!</p>
+    <p><b>Håll ner</b> skärmen (eller <b>mellanslagstangenten</b> på dator) för att hoppa uppåt &mdash; ju längre du håller, desto högre hopp.
+    Du har <b>3 liv</b> ❤️❤️❤️. Missar du ett bröd (eller landar på ett möget) tappar du ett liv och hoppar tillbaka till förra brödet. Tar du slut på liven &mdash; eller tiden, du har totalt <b>60 sekunder</b> &mdash; är spelet slut.</p>
+
+    <p style="margin-bottom:6px; font-weight:700; color:#6b4423;">Välj din figur</p>
+    <div id="charPicker" style="display:flex; justify-content:center; gap:12px; margin-bottom:8px;">
+      <button class="char-option selected" data-idx="0" style="width:64px; height:64px; border-radius:16px; border:3px solid #f3720c; background:#fff8ec; padding:4px; cursor:pointer;">
+        <img src="character1.svg" alt="Figur 1" style="width:100%; height:100%; object-fit:contain;">
+      </button>
+      <button class="char-option" data-idx="1" style="width:64px; height:64px; border-radius:16px; border:3px solid transparent; background:#fff8ec; padding:4px; cursor:pointer;">
+        <img src="character2.svg" alt="Figur 2" style="width:100%; height:100%; object-fit:contain;">
+      </button>
+      <button class="char-option" data-idx="2" style="width:64px; height:64px; border-radius:16px; border:3px solid transparent; background:#fff8ec; padding:4px; cursor:pointer;">
+        <img src="character3.svg" alt="Figur 3" style="width:100%; height:100%; object-fit:contain;">
+      </button>
     </div>
 
+    <button class="play-btn" id="startBtn">Starta spelet</button>
+  </div>
+</div>
+
+<div id="overOverlay" class="overlay" style="display:none;">
+  <div class="panel">
+    <h1 id="overTitle">Tiden är slut! ⏰</h1>
+    <p id="overSubtitle">Bra jobbat, capybaran hoppade så högt den hann.</p>
+    <div class="big-score" id="finalLevel">0</div>
+    <div class="best">Idag bästa: <span id="finalDaily">0</span> &middot; Vecka bästa: <span id="finalWeekly">0</span></div>
+    <button class="play-btn" id="restartBtn">Spela igen</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const hud = document.getElementById('hud');
+  const levelValEl = document.getElementById('levelVal');
+  const heightValEl = document.getElementById('heightVal');
+  const startOverlay = document.getElementById('startOverlay');
+  const overOverlay = document.getElementById('overOverlay');
+  const overTitle = document.getElementById('overTitle');
+  const overSubtitle = document.getElementById('overSubtitle');
+  const finalLevelEl = document.getElementById('finalLevel');
+  const finalDailyEl = document.getElementById('finalDaily');
+  const finalWeeklyEl = document.getElementById('finalWeekly');
+  const dailyBestValEl = document.getElementById('dailyBestVal');
+  const weeklyBestValEl = document.getElementById('weeklyBestVal');
+  const livesRow = document.getElementById('livesRow');
+  const startBtn = document.getElementById('startBtn');
+  const restartBtn = document.getElementById('restartBtn');
+  const holdBarWrap = document.getElementById('holdBarWrap');
+  const holdBar = document.getElementById('holdBar');
+  const hint = document.getElementById('hint');
+  const roundTimerWrap = document.getElementById('roundTimerWrap');
+  const roundTimerBar = document.getElementById('roundTimerBar');
+  const timeText = document.getElementById('timeText');
+  const charBtn = document.getElementById('charBtn');
+  const capyFileInput = document.getElementById('capyFileInput');
+
+  let W = 0, H = 0, DPR = Math.min(window.devicePixelRatio || 1, 2);
+  function resize(){
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = W * DPR; canvas.height = H * DPR;
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    groundScreenY = H - 90;
+  }
+  let groundScreenY = 0;
+  window.addEventListener('resize', resize);
+
+  // ---------- Audio ----------
+  let actx = null;
+  function ac(){ if(!actx){ try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } return actx; }
+  function tone(freq, dur, type, startGain, glide){
+    const c = ac(); if(!c) return;
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.setValueAtTime(freq, c.currentTime);
+    if(glide) osc.frequency.exponentialRampToValueAtTime(Math.max(30,glide), c.currentTime + dur);
+    gain.gain.setValueAtTime(startGain || 0.18, c.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + dur);
+    osc.connect(gain); gain.connect(c.destination);
+    osc.start(); osc.stop(c.currentTime + dur + 0.02);
+  }
+  function sndJump(){ tone(320, 0.16, 'triangle', 0.15, 620); }
+  function sndLand(){ tone(520, 0.12, 'sine', 0.2, 780); setTimeout(()=>tone(700,0.08,'sine',0.15),40); }
+  function sndBounce(){ tone(260, 0.18, 'triangle', 0.14, 160); }
+  function sndBreak(){ tone(180, 0.22, 'square', 0.16, 70); setTimeout(()=>tone(110,0.28,'sawtooth',0.12,50),60); }
+  function sndFail(){ tone(220, 0.5, 'sawtooth', 0.18, 60); }
+
+  // ---------- Game constants ----------
+  const LEVEL_GAP = 150;
+  const RISE_SPEED = 260;
+  const GRAVITY = 620;
+  const FALL_BUFFER = 80;
+  const CAPY_W = 72, CAPY_H = 50;
+  const BREAD_W_START = 120;   // long, generous bread at the start
+  const BREAD_W_MIN = 66;      // still forgiving even at high levels
+  const BREAD_SHRINK_PER_LVL = 1.8;
+  const MAX_HOLD_RISE = 900; // px cap safety
+  const TOTAL_TIME = 60;        // whole run has 60 seconds total
+  const BREAD_Y_JITTER = 42;    // loaves within a round can sit at different heights
+  const SETTLE_DURATION = 0.22; // seconds — smooth touch-down instead of an instant snap
+  const PLATFORM_DRIFT_MIN = 40, PLATFORM_DRIFT_MAX = 85; // px/s, resting bread keeps drifting
+
+  let state = 'start'; // start | onPlatform | holding | falling | settling
+  let capX = 0, capWorldY = 0, capVy = 0;
+  let restingPlatform = null; // {x, level, isPlate, y, w, vx}
+  let targetBreads = []; // array of {x, y, vx, level, w,h}
+  let currentLevel = 0;
+  let lives = 3;
+  const LIVES_START = 3;
+  let camOffset = 0;
+  let squash = 1; // for landing squish animation
+  let legPhase = 0;
+  let totalTimeLeft = TOTAL_TIME;
+  let customCapyImg = null;
+  let settleFromX = 0, settleFromY = 0, settleTimer = 0, settleDuration = SETTLE_DURATION;
+  let groundedTimer = -1;
+  let crumbs = []; // little particle burst when a moldy loaf crumbles
+
+  // ---------- Character roster: loaded from characterN.svg files next to this HTML ----------
+  // To change a character later, just replace characterN.svg (same filename, same folder)
+  // and reload the page — no need to touch this code.
+  const CHAR_FILES = ['character1.svg', 'character2.svg', 'character3.svg'];
+  let selectedCharIndex = 0;
+  function loadCharacterImage(url, onDone){
+    const img = new Image();
+    img.onload = () => { customCapyImg = img; if(onDone) onDone(true); };
+    img.onerror = () => { console.warn(url + ' kunde inte laddas.'); if(onDone) onDone(false); };
+    img.src = url + '?v=' + Date.now(); // cache-bust so a replaced file shows up on reload
+  }
+  function loadDefaultCapybara(){ loadCharacterImage(CHAR_FILES[selectedCharIndex]); }
+
+  let clouds = [];
+  function initClouds(){
+    clouds = [];
+    for(let i=0;i<5;i++){
+      clouds.push({
+        x: Math.random()*1.4 - 0.2,
+        y: 40 + Math.random()*140,
+        s: 0.7 + Math.random()*0.9,
+        v: 6 + Math.random()*10
+      });
+    }
+  }
+
+  function screenY(worldY){ return groundScreenY - (worldY - camOffset); }
+
+  function breadWidthForLevel(level){
+    return Math.max(BREAD_W_MIN, BREAD_W_START - level * BREAD_SHRINK_PER_LVL);
+  }
+
+  function badChanceForLevel(level){
+    return Math.min(0.32, 0.06 + level * 0.012); // starts rare, gets a bit more common higher up
+  }
+
+  function spawnBreadsForLevel(level){
+    const w = breadWidthForLevel(level);
+    const h = w * 0.68;
+    const count = 2 + (Math.random() < 0.5 ? 1 : 0); // 2 or 3 loaves flying in at once
+    const badChance = badChanceForLevel(level);
+    const breads = [];
+    for(let i=0;i<count;i++){
+      const fromLeft = Math.random() < 0.5; // each loaf picks its own side independently
+      const speed = (80 + Math.random()*110) * (1 + Math.min(level,25)*0.015);
+      const stagger = i * (100 + Math.random()*60);
+      const jitter = (Math.random()*2 - 1) * BREAD_Y_JITTER;
+      breads.push({
+        level: level,
+        y: level * LEVEL_GAP + jitter,
+        x: fromLeft ? -w - stagger : W + w + stagger,
+        vx: fromLeft ? speed : -speed,
+        w: w, h: h,
+        bad: level > 1 && Math.random() < badChance // no bad loaves on the very first jump
+      });
+    }
+    // never let an entire round be bad — always leave at least one safe loaf
+    if(breads.length && breads.every(b => b.bad)){
+      breads[Math.floor(Math.random()*breads.length)].bad = false;
+    }
+    return breads;
+  }
+
+  function resetGame(){
+    currentLevel = 0;
+    lives = LIVES_START;
+    capX = W/2;
+    capWorldY = 0;
+    capVy = 0;
+    camOffset = 0;
+    restingPlatform = { x: W/2, level: 0, isPlate: true, y: 0 };
+    targetBreads = spawnBreadsForLevel(1);
+    state = 'onPlatform';
+    squash = 1;
+    crumbs = [];
+    totalTimeLeft = TOTAL_TIME;
+    roundTimerWrap.classList.add('show');
+    timeText.classList.add('show');
+    updateHud();
+    hint.style.opacity = '0.95';
+  }
+
+  // ---------- Persistent high scores (today / this week) ----------
+  // Stored with localStorage so scores survive reloads once this file is actually
+  // opened as a real page (double-clicked, or hosted e.g. on GitHub Pages).
+  const SCORE_KEY = 'capybaraBrodhopp_scores_v1';
+  let scoreData = { dailyDate: '', dailyBest: 0, weekStart: '', weekBest: 0 };
+
+  function dateStr(d){
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  function todayStr(){ return dateStr(new Date()); }
+  function weekStartStr(){
+    const d = new Date();
+    const day = d.getDay(); // 0=sun..6=sat
+    const diff = (day === 0) ? 6 : day - 1; // days since Monday
+    d.setDate(d.getDate() - diff);
+    return dateStr(d);
+  }
+  function loadScores(){
+    try{
+      const raw = localStorage.getItem(SCORE_KEY);
+      if(raw) scoreData = JSON.parse(raw);
+    }catch(e){ /* localStorage unavailable — fall back to in-memory only */ }
+    const td = todayStr(), ws = weekStartStr();
+    let changed = false;
+    if(scoreData.dailyDate !== td){ scoreData.dailyDate = td; scoreData.dailyBest = 0; changed = true; }
+    if(scoreData.weekStart !== ws){ scoreData.weekStart = ws; scoreData.weekBest = 0; changed = true; }
+    if(changed) saveScores();
+  }
+  function saveScores(){
+    try{ localStorage.setItem(SCORE_KEY, JSON.stringify(scoreData)); }catch(e){}
+  }
+  function registerScore(level){
+    let changed = false;
+    if(level > scoreData.dailyBest){ scoreData.dailyBest = level; changed = true; }
+    if(level > scoreData.weekBest){ scoreData.weekBest = level; changed = true; }
+    if(changed) saveScores();
+  }
+
+  function updateLivesHud(){
+    let s = '';
+    for(let i=0;i<LIVES_START;i++){ s += (i < lives) ? '❤️' : '🤍'; }
+    livesRow.textContent = s;
+  }
+
+  function updateHud(){
+    levelValEl.textContent = currentLevel;
+    heightValEl.textContent = (currentLevel * LEVEL_GAP / 100).toFixed(1);
+    dailyBestValEl.textContent = scoreData.dailyBest;
+    weeklyBestValEl.textContent = scoreData.weekBest;
+    updateLivesHud();
+  }
+
+  // ---------- Input ----------
+  let holdStart = 0;
+  let holdBaseY = 0;
+  function pointerDown(e){
+    e.preventDefault();
+    if(state !== 'onPlatform') return;
+    ac(); // unlock audio on user gesture
+    state = 'holding';
+    holdStart = performance.now();
+    capX = restingPlatform.x;
+    holdBaseY = restingPlatform.y;
+    hint.style.opacity = '0';
+    holdBarWrap.classList.add('show');
+    sndJump();
+  }
+  function pointerUp(e){
+    if(e) e.preventDefault();
+    if(state !== 'holding') return;
+    state = 'falling';
+    capVy = RISE_SPEED;
+    holdBarWrap.classList.remove('show');
+  }
+  canvas.addEventListener('pointerdown', pointerDown);
+  window.addEventListener('pointerup', pointerUp);
+  canvas.addEventListener('pointercancel', pointerUp);
+  canvas.addEventListener('contextmenu', e=>e.preventDefault());
+
+  // desktop: spacebar works the same as pressing/releasing the screen
+  let spaceHeld = false;
+  window.addEventListener('keydown', (e)=>{
+    if(e.code === 'Space' || e.key === ' '){
+      e.preventDefault();
+      if(!spaceHeld){ spaceHeld = true; pointerDown(e); }
+    }
+  });
+  window.addEventListener('keyup', (e)=>{
+    if(e.code === 'Space' || e.key === ' '){
+      e.preventDefault();
+      spaceHeld = false;
+      pointerUp(e);
+    }
+  });
+
+  // custom character upload (SVG or PNG/JPG)
+  charBtn.addEventListener('click', ()=> capyFileInput.click());
+  capyFileInput.addEventListener('change', (e)=>{
+    const file = e.target.files && e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => { customCapyImg = img; };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // character picker (shown before the game starts)
+  const charOptionBtns = document.querySelectorAll('.char-option');
+  charOptionBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.idx, 10);
+      selectedCharIndex = idx;
+      charOptionBtns.forEach(b => {
+        b.classList.toggle('selected', b === btn);
+        b.style.borderColor = (b === btn) ? '#f3720c' : 'transparent';
+      });
+      loadCharacterImage(CHAR_FILES[idx]);
+    });
+  });
+
+  startBtn.addEventListener('click', ()=>{
+    startOverlay.style.display = 'none';
+    resetGame();
+  });
+  restartBtn.addEventListener('click', ()=>{
+    overOverlay.style.display = 'none';
+    resetGame();
+  });
+
+  // a fall (missed landing, or a bad loaf crumbling) costs one life; out of lives ends the run
+  function handleFall(isBad){
+    if(lives > 0){
+      lives--;
+      updateLivesHud();
+      isBad ? sndBreak() : sndBounce();
+      hint.style.opacity = '0.9';
+      // if the ground is currently in view, fall all the way down onto it;
+      // otherwise fall fully out of sight first — either way, reappear afterwards
+      const groundInView = screenY(0) <= H + 60;
+      if(groundInView){
+        groundedTimer = -1;
+        state = 'fallingToGround';
+      } else {
+        state = 'fallingOffscreen';
+      }
+    } else {
+      isBad ? sndBreak() : sndFail();
+      registerScore(currentLevel);
+      showGameOver('lives');
+    }
+  }
+
+  // ---------- Update ----------
+  let lastT = performance.now();
+  function update(dt){
+    // clouds always drift, independent of world scroll
+    for(const c of clouds){
+      c.x += (c.v*dt)/W;
+      if(c.x > 1.3) c.x = -0.3;
+    }
+
+    // crumb particles from a crumbling loaf
+    if(crumbs.length){
+      for(const c of crumbs){
+        c.vy += 480*dt;
+        c.x += c.vx*dt;
+        c.y += c.vy*dt;
+        c.life -= dt;
+      }
+      crumbs = crumbs.filter(c => c.life > 0);
+    }
+
+    if(state === 'start'){ return; }
+
+    // overall 60s run timer — always ticking once the game has started
+    totalTimeLeft -= dt;
+    const tpct = Math.max(0, totalTimeLeft / TOTAL_TIME);
+    roundTimerBar.style.width = (tpct*100) + '%';
+    roundTimerBar.style.background = tpct < 0.25
+      ? 'linear-gradient(90deg, #ff8a5f, #ff5f5f)'
+      : 'linear-gradient(90deg, #8be36b, #ffd23f)';
+    timeText.textContent = Math.max(0, Math.ceil(totalTimeLeft)) + ' s kvar';
+    if(totalTimeLeft <= 0){
+      totalTimeLeft = 0;
+      registerScore(currentLevel);
+      sndFail();
+      showGameOver('time');
+      return;
+    }
+
+    // move all active target bread loaves (free to fly fully off-screen and wrap around)
+    for(const b of targetBreads){
+      b.x += b.vx * dt;
+      if(b.vx > 0 && b.x > W + b.w) b.x = -b.w;
+      if(b.vx < 0 && b.x < -b.w) b.x = W + b.w;
+    }
+
+    // the platform capybara is currently on (or launched from) keeps gently drifting,
+    // but it's never allowed to wander off-screen — it bounces back the moment it would
+    if(restingPlatform && !restingPlatform.isPlate){
+      if(restingPlatform.vx === undefined){
+        restingPlatform.vx = (Math.random() < 0.5 ? -1 : 1) * (PLATFORM_DRIFT_MIN + Math.random()*(PLATFORM_DRIFT_MAX-PLATFORM_DRIFT_MIN));
+      }
+      restingPlatform.x += restingPlatform.vx * dt;
+      const half = restingPlatform.w/2, margin = 24;
+      if(restingPlatform.x < half+margin){ restingPlatform.x = half+margin; restingPlatform.vx = Math.abs(restingPlatform.vx); }
+      if(restingPlatform.x > W-half-margin){ restingPlatform.x = W-half-margin; restingPlatform.vx = -Math.abs(restingPlatform.vx); }
+    }
+
+    if(state === 'onPlatform'){
+      // ride along with the platform while waiting to jump
+      capX = restingPlatform.x;
+      capWorldY = restingPlatform.y;
+    }
+    else if(state === 'holding'){
+      const held = (performance.now() - holdStart)/1000;
+      const rise = Math.min(held * RISE_SPEED, MAX_HOLD_RISE);
+      capWorldY = holdBaseY + rise;
+      holdBar.style.width = (Math.min(1.35, held*RISE_SPEED/LEVEL_GAP) * 100) + '%';
+      squash = 1 - Math.min(0.18, held*0.35);
+    }
+    else if(state === 'falling'){
+      const prevY = capWorldY;
+      capVy -= GRAVITY * dt;
+      capWorldY += capVy * dt;
+      squash = 1;
+
+      if(capVy < 0 && targetBreads.length){
+        let landed = null;
+        for(const b of targetBreads){
+          if(prevY >= b.y && capWorldY <= b.y){
+            const tol = b.w/2 + CAPY_W*0.32; // generous, forgiving landing window
+            if(Math.abs(capX - b.x) <= tol){ landed = b; break; }
+          }
+        }
+        if(landed && landed.bad){
+          // moldy loaf — it crumbles away
+          spawnCrumbs(landed.x, screenY(landed.y), true);
+          targetBreads.splice(targetBreads.indexOf(landed), 1);
+          handleFall(true);
+        }
+        else if(landed){
+          // successful landing — smoothly settle onto the new bread instead of snapping
+          currentLevel = landed.level;
+          restingPlatform = { x: landed.x, level: currentLevel, isPlate: false, w: landed.w, y: landed.y };
+          targetBreads = spawnBreadsForLevel(currentLevel + 1);
+          settleFromX = capX; settleFromY = capWorldY; settleTimer = 0; settleDuration = SETTLE_DURATION;
+          state = 'settling';
+          sndLand();
+          updateHud();
+          hint.style.opacity = '0.9';
+        }
+      }
+
+      if(state === 'falling'){
+        const floor = restingPlatform.y - FALL_BUFFER;
+        if(capWorldY < floor){
+          // missed every loaf this round
+          handleFall(false);
+        }
+      }
+    }
+    else if(state === 'fallingToGround'){
+      // ground is in view — let the capybara actually fall down and land on the grass
+      if(groundedTimer < 0){
+        capVy -= GRAVITY * dt;
+        capWorldY += capVy * dt;
+        squash = 1;
+        if(capWorldY <= 0){
+          capWorldY = 0;
+          capVy = 0;
+          groundedTimer = 0;
+          squash = 0.66;
+        }
+      } else {
+        groundedTimer += dt;
+        squash += (1 - squash) * Math.min(1, dt*7); // settle out of the touch-down squish
+        if(groundedTimer > 0.22){
+          settleFromX = capX; settleFromY = 0; settleTimer = 0; settleDuration = 0.35;
+          state = 'settling';
+        }
+      }
+    }
+    else if(state === 'fallingOffscreen'){
+      // ground isn't in view — let the capybara fall fully out of sight, then reappear
+      capVy -= GRAVITY * dt;
+      capWorldY += capVy * dt;
+      squash = 1;
+      if(screenY(capWorldY) > H + 60){
+        settleFromX = restingPlatform.x;
+        settleFromY = restingPlatform.y - 260; // reappears rising up from just below view
+        settleTimer = 0; settleDuration = 0.4;
+        state = 'settling';
+      }
+    }
+    else if(state === 'settling'){
+      settleTimer += dt;
+      const t = Math.min(1, settleTimer / settleDuration);
+      const ease = 1 - Math.pow(1-t, 3); // easeOutCubic
+      capX = settleFromX + (restingPlatform.x - settleFromX) * ease;
+      capWorldY = settleFromY + (restingPlatform.y - settleFromY) * ease;
+      squash = 1 - Math.sin(Math.min(1,t*1.15) * Math.PI) * 0.22; // gentle touch-down dip
+      if(t >= 1){
+        capX = restingPlatform.x;
+        capWorldY = restingPlatform.y;
+        squash = 1;
+        state = 'onPlatform';
+      }
+    }
+
+    // camera follow
+    const desired = Math.max(0, capWorldY - H*0.42);
+    camOffset += (desired - camOffset) * Math.min(1, dt*6);
+
+    legPhase += dt*6;
+  }
+
+  function showGameOver(reason){
+    finalLevelEl.textContent = currentLevel;
+    finalDailyEl.textContent = scoreData.dailyBest;
+    finalWeeklyEl.textContent = scoreData.weekBest;
+    if(reason === 'lives'){
+      overTitle.textContent = 'Slut på liv! 💔';
+      overSubtitle.textContent = 'Capybaran ramlade en gång för mycket.';
+    } else {
+      overTitle.textContent = 'Tiden är slut! ⏰';
+      overSubtitle.textContent = 'Bra jobbat, capybaran hoppade så högt den hann.';
+    }
+    updateHud();
+    overOverlay.style.display = 'flex';
+    roundTimerWrap.classList.remove('show');
+    timeText.classList.remove('show');
+    state = 'start';
+  }
+
+  // ---------- Drawing ----------
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+
+    // sky gradient
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0, '#4fa8dd');
+    g.addColorStop(0.55, '#8dd3f0');
+    g.addColorStop(1, '#c9edf7');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,W,H);
+
+    // sun
+    ctx.save();
+    const sx = W*0.82, sy = 90;
+    ctx.fillStyle = 'rgba(255,240,150,0.55)';
+    ctx.beginPath(); ctx.arc(sx,sy,60,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ffe066';
+    ctx.beginPath(); ctx.arc(sx,sy,34,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+
+    // clouds
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    for(const c of clouds){
+      const cx = c.x * W, cy = c.y, s = c.s;
+      cloudShape(cx, cy, s);
+    }
+
+    // ground layer (world y = 0 area) — grass, flowers, tree, plate
+    const gsy = screenY(0);
+    if(gsy < H + 140 && gsy > -300){
+      // grass hill
+      ctx.fillStyle = '#5fae3f';
+      ctx.beginPath();
+      ctx.moveTo(0, gsy+40);
+      ctx.quadraticCurveTo(W*0.5, gsy+10, W, gsy+40);
+      ctx.lineTo(W, H+40);
+      ctx.lineTo(0, H+40);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#7bc958';
+      ctx.beginPath();
+      ctx.moveTo(0, gsy+40);
+      ctx.quadraticCurveTo(W*0.5, gsy+16, W, gsy+40);
+      ctx.lineTo(W, gsy+52);
+      ctx.quadraticCurveTo(W*0.5, gsy+28, 0, gsy+52);
+      ctx.closePath();
+      ctx.fill();
+
+      // tree
+      drawTree(W*0.14, gsy+34);
+
+      // flowers
+      drawFlower(W*0.30, gsy+58, '#ff6b8b');
+      drawFlower(W*0.40, gsy+70, '#ffd23f');
+      drawFlower(W*0.62, gsy+64, '#ff9f43');
+      drawFlower(W*0.72, gsy+50, '#c96bff');
+      drawFlower(W*0.85, gsy+66, '#ff6b8b');
+
+      // plate
+      drawPlate(restingPlatform && restingPlatform.isPlate ? restingPlatform.x : W/2, gsy);
+    }
+
+    // target bread loaves
+    if(state !== 'start'){
+      for(const b of targetBreads){
+        drawBread(b.x, screenY(b.y), b.w, b.h, b.bad);
+      }
+    }
+
+    // resting bread platform (if not the plate)
+    if(restingPlatform && !restingPlatform.isPlate){
+      drawBread(restingPlatform.x, screenY(restingPlatform.y), restingPlatform.w || 80, (restingPlatform.w||80)*0.68);
+    }
+
+    // capybara
+    if(state !== 'start'){
+      drawCapybara(capX, screenY(capWorldY), squash, state);
+    }
+
+    // crumb particles (drawn in screen space, on top of everything)
+    if(crumbs.length){
+      ctx.save();
+      for(const c of crumbs){
+        ctx.globalAlpha = Math.max(0, c.life / c.maxLife);
+        ctx.fillStyle = c.color;
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, c.size, 0, Math.PI*2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  function cloudShape(cx,cy,s){
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 34*s, 18*s, 0, 0, Math.PI*2);
+    ctx.ellipse(cx+28*s, cy+6*s, 26*s, 15*s, 0, 0, Math.PI*2);
+    ctx.ellipse(cx-26*s, cy+8*s, 24*s, 14*s, 0, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  function drawTree(x,y){
+    ctx.fillStyle = '#8a5a2b';
+    ctx.fillRect(x-8, y-70, 16, 74);
+    ctx.fillStyle = '#3f9e3a';
+    ctx.beginPath(); ctx.arc(x, y-95, 34, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x-26, y-78, 26, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x+26, y-78, 26, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#57bb4c';
+    ctx.beginPath(); ctx.arc(x-8, y-100, 22, 0, Math.PI*2); ctx.fill();
+  }
+
+  function drawFlower(x,y,color){
+    ctx.fillStyle = '#3f9e3a';
+    ctx.fillRect(x-1.5, y, 3, 14);
+    ctx.fillStyle = color;
+    for(let i=0;i<5;i++){
+      const a = i*(Math.PI*2/5);
+      ctx.beginPath();
+      ctx.ellipse(x+Math.cos(a)*6, y+Math.sin(a)*6, 5, 3.5, a, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#ffe066';
+    ctx.beginPath(); ctx.arc(x,y,3.2,0,Math.PI*2); ctx.fill();
+  }
+
+  function drawPlate(x,y){
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.beginPath(); ctx.ellipse(x, y+10, 56, 14, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#f2f2f2';
+    ctx.beginPath(); ctx.ellipse(x, y, 56, 16, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#dcdcdc';
+    ctx.beginPath(); ctx.ellipse(x, y-3, 40, 10, 0, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#c9c9c9'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(x, y, 56, 16, 0, 0, Math.PI*2); ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawBread(x,y,w,h,bad){
+    w = w || 64; h = h || 44;
+    const rx = w/2, ry = h/2;
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.beginPath(); ctx.ellipse(x, y+ry*0.8, rx*0.94, ry*0.4, 0, 0, Math.PI*2); ctx.fill();
+
+    ctx.fillStyle = bad ? '#a9995f' : '#e3a34e';
+    ctx.beginPath();
+    ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = bad ? '#5c5636' : '#b9762a'; ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    ctx.fillStyle = bad ? '#c2b878' : '#f0c07f';
+    ctx.beginPath();
+    ctx.ellipse(x, y-ry*0.2, rx*0.75, ry*0.65, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.strokeStyle = bad ? '#5c5636' : '#b9762a'; ctx.lineWidth = 2; ctx.lineCap='round';
+    const slits = w > 90 ? 3 : 2;
+    ctx.beginPath();
+    for(let i=0;i<slits;i++){
+      const sx = x - rx*0.55 + i*(rx*1.1/(slits-1||1));
+      ctx.moveTo(sx-6, y-ry*0.5); ctx.lineTo(sx+6, y+ry*0.15);
+    }
+    ctx.stroke();
+
+    if(bad){
+      // mold speckles so a sharp-eyed player can spot it and avoid it
+      ctx.fillStyle = 'rgba(90,140,70,0.75)';
+      const spots = [[-0.4,-0.15,0.14],[0.1,0.05,0.11],[0.32,-0.25,0.09],[-0.15,0.28,0.1],[0.42,0.18,0.08]];
+      for(const [ox,oy,r] of spots){
+        ctx.beginPath();
+        ctx.ellipse(x+ox*w, y+oy*h, r*w, r*h*0.7, 0, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
+  function spawnCrumbs(x,y,bad){
+    const color = bad ? '#7a8f5a' : '#e3a34e';
+    for(let i=0;i<9;i++){
+      const ang = Math.random()*Math.PI*2;
+      const spd = 60 + Math.random()*140;
+      crumbs.push({
+        x, y,
+        vx: Math.cos(ang)*spd,
+        vy: -Math.abs(Math.sin(ang)*spd) - 40,
+        life: 0.45 + Math.random()*0.35,
+        maxLife: 0.8,
+        size: 2.5 + Math.random()*3.5,
+        color
+      });
+    }
+  }
+
+  function drawCapybara(x, y, sq, st){
+    ctx.save();
+    ctx.translate(x, y);
+    const bob = (st==='onPlatform') ? Math.sin(legPhase)*2 : 0;
+    ctx.translate(0, bob);
+    ctx.scale(1/Math.sqrt(sq), sq); // volume-preserving squash/stretch
+
+    // shadow (kept for any character, custom or default)
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.beginPath(); ctx.ellipse(0, 20, 30, 8, 0, 0, Math.PI*2); ctx.fill();
+
+    if(customCapyImg){
+      const iw = 92;
+      const ih = iw * (customCapyImg.height / customCapyImg.width);
+      const baseline = 14; // feet rest just above the shadow, grounded on the platform
+      ctx.drawImage(customCapyImg, -iw/2, baseline - ih, iw, ih);
+      ctx.restore();
+      return;
+    }
+
+    // legs
+    ctx.fillStyle = '#8a6a44';
+    ctx.beginPath(); ctx.ellipse(-18, 16, 8, 10, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(18, 16, 8, 10, 0, 0, Math.PI*2); ctx.fill();
+
+    // body
+    ctx.fillStyle = '#a97c50';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, CAPY_W/2, CAPY_H/2, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // belly
+    ctx.fillStyle = '#c9a06e';
+    ctx.beginPath();
+    ctx.ellipse(2, 8, 22, 14, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // head
+    ctx.fillStyle = '#a97c50';
+    ctx.beginPath();
+    ctx.ellipse(28, -6, 20, 16, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // snout
+    ctx.fillStyle = '#c9a06e';
+    ctx.beginPath();
+    ctx.ellipse(40, 0, 11, 9, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // nostrils
+    ctx.fillStyle = '#5a3d24';
+    ctx.beginPath(); ctx.ellipse(44, -2, 1.6, 2.2, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(44, 3, 1.6, 2.2, 0, 0, Math.PI*2); ctx.fill();
+
+    // ears
+    ctx.fillStyle = '#7d5c3a';
+    ctx.beginPath(); ctx.ellipse(16, -22, 5, 6, -0.3, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(30, -22, 5, 6, 0.3, 0, Math.PI*2); ctx.fill();
+
+    // eyes
+    ctx.fillStyle = '#2c2013';
+    ctx.beginPath(); ctx.arc(24, -10, 2.6, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(35, -10, 2.6, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(24.8, -10.8, 0.9, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(35.8, -10.8, 0.9, 0, Math.PI*2); ctx.fill();
+
+    // blush
+    ctx.fillStyle = 'rgba(255,140,150,0.5)';
+    ctx.beginPath(); ctx.ellipse(20, -1, 4, 2.6, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(38, -1, 4, 2.6, 0, 0, Math.PI*2); ctx.fill();
+
+    ctx.restore();
+  }
+
+  // ---------- Loop ----------
+  function frame(t){
+    const dt = Math.min(0.033, (t - lastT)/1000);
+    lastT = t;
+    update(dt);
+    draw();
+    requestAnimationFrame(frame);
+  }
+
+  resize();
+  initClouds();
+  loadDefaultCapybara();
+  loadScores();
+  updateHud();
+  draw();
+  requestAnimationFrame(frame);
+})();
+</script>
 </body>
 </html>
